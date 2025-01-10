@@ -70,7 +70,7 @@ void setup() {
   pox.setOnBeatDetectedCallback(onBeatDetected);
   
   xTaskCreatePinnedToCore(max30100_value, "MAX30100", 2048, NULL, 1, &max30100_value_Handler, 0);
-  xTaskCreate(Sensor_values, "Sensor values", 2048, NULL, 1, &Sensor_values_handler);
+  xTaskCreatePinnedToCore(Sensor_values, "Sensor values", 2048, NULL, 1, &Sensor_values_handler, 1);
 }
 
 void Sensor_values(void *pvParameters) {
