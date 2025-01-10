@@ -25,8 +25,8 @@ void max30100_value(void *pvParameters);
 TaskHandle_t max30100_value_Handler;
 
 void DhT11_sensor(){
-  float h = dht.readHumidity();
-  float t = dht.readTemperature();
+  h = dht.readHumidity();
+  t = dht.readTemperature();
 }
 
 void serial_print(){
