@@ -8,7 +8,7 @@
 
 #define REPORTING_PERIOD_MS  500
 #define d2 2
-#define sensor A0
+#define sensor 34
 static uint8_t DHTPIN = 23;
 uint32_t tsLastReport = 0;
 int heart,spo2, mq;
@@ -54,7 +54,6 @@ void MQ_sensor(){
 
 void setup() {
   Serial.begin(115200);
-  pinMode(green1, OUTPUT);
   dht.begin();
   
   Serial.print("Initializing pulse oximeter..");
