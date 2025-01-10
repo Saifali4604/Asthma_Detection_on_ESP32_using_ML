@@ -78,6 +78,7 @@ void Sensor_values(void *pvParameters) {
     DhT11_sensor();
     MQ_sensor();
     serial_print();
+    vTaskDelay(pdMS_TO_TICKS(500)); // Delay of 0.5s
   }  
 }
 
@@ -89,6 +90,7 @@ void max30100_value(void *pvParameters) {
       spo2 = pox.getSpO2();
       tsLastReport = millis();
     }
+    vTaskDelay(pdMS_TO_TICKS(100)); // Delay of 100 ms
   }  
 }
 
