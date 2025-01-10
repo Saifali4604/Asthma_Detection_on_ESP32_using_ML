@@ -11,7 +11,8 @@
 #define sensor A0
 static uint8_t DHTPIN = 23;
 uint32_t tsLastReport = 0;
-int heart,spo2;
+int heart,spo2, mq;
+float t,h;
 
 DHT dht(DHTPIN, DHT11);
 PulseOximeter pox;
@@ -21,7 +22,7 @@ void Sensor_values(void *pvParameters);
 TaskHandle_t Sensor_values_handler;
 
 void max30100_value(void *pvParameters);
-TaskHandle_t &max30100_value_Handler;
+TaskHandle_t max30100_value_Handler;
 
 void DhT11_sensor(){
   float h = dht.readHumidity();
@@ -36,7 +37,7 @@ void serial_print(){
   Serial.print(h);
   Serial.print(" :: ");
   Serial.print("spo2:");
-  Serial.print(s);
+  Serial.print(spo2);
   Serial.print(" :: ");
   Serial.print("Heart:");
   Serial.print(heart);
@@ -47,8 +48,8 @@ void serial_print(){
 
 void MQ_sensor(){
   //Get the ultrasonic sensor values
-  value = analogRead(sensor);
-  value = map(value, 0, 4095, 0, 100);
+  mq = analogRead(sensor);
+  mq = map(mq, 0, 4095, 0, 100);
 }
 
 void setup() {
