@@ -17,7 +17,11 @@ install it selecting the option: Automatic install the necessary
 ### Windows:
 Install WSL on your Windows machine, To install WSL, open PowerShell as an Administrator and run:
 `` wsl --install ``
+
+
 restart
+
+
 open PowerShell as an Administrator and run:
 `` wsl ``
 follow the Linux setup.
