@@ -15,6 +15,7 @@ install it selecting the option: Automatic install the necessary
 
 ## Edge Impulse CLI
 ### Windows:
+
 Install WSL on your Windows machine, To install WSL, open PowerShell as an Administrator and run:
 ``` wsl --install ```
 
