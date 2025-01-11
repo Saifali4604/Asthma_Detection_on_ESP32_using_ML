@@ -60,7 +60,8 @@ Install the CLI tools via:
 ```
 npm install -g edge-impulse-cli
 ```
-
+[https://docs.edgeimpulse.com/docs/tools/edge-impulse-cli/cli-installation]
+[https://docs.edgeimpulse.com/docs/tools/edge-impulse-cli/cli-data-forwarder]
 ### or Arduino CLI
 [https://arduino.github.io/arduino-cli/1.1/installation/]
 
