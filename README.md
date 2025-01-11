@@ -27,21 +27,26 @@ open PowerShell as an Administrator and run:
 follow the Linux setup.
 
 ## Linux :
+
 `` 
 curl -sL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
 node -v
 ``
 
+
+Let's verify the node installation directory:
 ``
 npm config get prefix
 ``
 
+If it returns /usr/local/, run the following commands to change npm's default directory:
 ``
 mkdir ~/.npm-global
 npm config set prefix '~/.npm-global'
 echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.profile
 ``
+
 
 ``
 sudo apt update && sudo apt install -y build-essential
@@ -50,6 +55,8 @@ sudo apt update && sudo apt install -y build-essential
 ``
 make --version
 ``
+
+Install the CLI tools via:
 
 ``
 npm install -g edge-impulse-cli
