@@ -1,6 +1,6 @@
 # Astama_Detection
 
-# Software Installation
+# Software Method 1
 ## python Installation
 Download the latest version Python from [https://www.python.org/downloads/] for Windows / linux.
 
@@ -61,4 +61,25 @@ Install the CLI tools via:
 npm install -g edge-impulse-cli
 ```
 
+### or Arduino CLI
+[https://arduino.github.io/arduino-cli/1.1/installation/]
 
+# Method 2
+If you have issues installing the CLI you can also collect data from fully-supported development boards directly using recent versions of Google Chrome and Microsoft Edge. 
+
+
+Collecting data from real devices is the first step of any embedded machine learning solution, and to make this even easier we’re adding support for Web Serial to the Edge Impulse Studio.
+
+
+This means that you can now collect data from any fully-supported development board straight from your browser, without any other tools installed on your computer.
+
+
+To get started just open the latest version of Google Chrome or Microsoft Edge, go to the data acquisition page in the Studio, and click ’Connect using WebUSB’.
+
+
+Select your development board, and you’re done.
+
+
+You can now collect data from any of the built-in sensors, see a visual preview on boards with a camera, and verify your model.
+
+[https://edgeimpulse.com/blog/collect-sensor-data-straight-from-your-web-browser/]
