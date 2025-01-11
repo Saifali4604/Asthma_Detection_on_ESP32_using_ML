@@ -19,7 +19,9 @@ Install WSL on your Windows machine, To install WSL, open PowerShell as an Admin
 ``` wsl --install ```
 
 
-restart
+restart the Computer
+
+
 open PowerShell as an Administrator and run:
 ``` wsl ```
 follow the Linux setup.
