@@ -65,6 +65,19 @@ npm install -g edge-impulse-cli
 ### or Arduino CLI
 [https://arduino.github.io/arduino-cli/1.1/installation/]
 
+### Data Forwarding
+1. Create a Project in Edge Impulse Platform.
+2. click to "Connect your device or development board".
+3. Upload the Given Code.
+4. close the Arduino IDE.
+5. Remove and connect the ESP32 to the Laptop.
+6. Open CMD/Power shell/ WSL/ Linux.
+7. Run
+   ```
+    edge-impulse-data-forwarder --frequency 50
+   ```
+8. Sample is been Uploaded.
+
 # Method 2
 If you have issues installing the CLI you can also collect data from fully-supported development boards directly using recent versions of Google Chrome and Microsoft Edge. 
 
