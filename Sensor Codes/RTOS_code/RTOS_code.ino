@@ -9,6 +9,10 @@
 #define REPORTING_PERIOD_MS  500
 #define d2 2
 #define sensor 34
+#define FREQUENCY_HZ 50
+#define INTERVAL_MS (1000 / (FREQUENCY_HZ + 1))
+
+static unsigned long last_interval_ms = 0;
 static uint8_t DHTPIN = 23;
 uint32_t tsLastReport = 0;
 int heart,spo2, mq;
@@ -17,6 +21,9 @@ float t,h;
 DHT dht(DHTPIN, DHT11);
 PulseOximeter pox;
 void onBeatDetected(){}
+
+void Edge_impulse(void *pvParameters);
+TaskHandle_t Edge_impulse_Handler;
 
 void Sensor_values(void *pvParameters);
 TaskHandle_t Sensor_values_handler;
@@ -67,8 +74,9 @@ void setup() {
   pox.setIRLedCurrent(MAX30100_LED_CURR_14_2MA);//increase the intensity of IR light,  in this code current is 14.2 mA
     // Register a callback for the beat detection
   pox.setOnBeatDetectedCallback(onBeatDetected);
-  
-  xTaskCreatePinnedToCore(max30100_value, "MAX30100", 2048, NULL, 1, &max30100_value_Handler, 0);
+
+  xTaskCreatePinnedToCore(Edge_impulse, "Edge Impulse", 2048, NULL, 1, &Edge_impulse_Handler, 0);
+  xTaskCreatePinnedToCore(max30100_value, "MAX30100", 2048, NULL, 1, &max30100_value_Handler, 1);
   xTaskCreatePinnedToCore(Sensor_values, "Sensor values", 2048, NULL, 1, &Sensor_values_handler, 1);
 }
 
@@ -76,7 +84,7 @@ void Sensor_values(void *pvParameters) {
   for (;;) {
     DhT11_sensor();
     MQ_sensor();
-    serial_print();
+    //serial_print();
     vTaskDelay(pdMS_TO_TICKS(500)); // Delay of 0.5s
   }  
 }
@@ -91,6 +99,23 @@ void max30100_value(void *pvParameters) {
     }
     vTaskDelay(pdMS_TO_TICKS(100)); // Delay of 100 ms
   }  
+}
+
+void Edge_impulse(void *pvParameters) {
+  for(;;){
+    if (millis() > last_interval_ms + INTERVAL_MS) {
+      last_interval_ms = millis();
+      Serial.print(t);
+      Serial.print('\t');
+      Serial.print(h);
+      Serial.print('\t');
+      Serial.print(spo2);
+      Serial.print('\t');
+      Serial.print(heart);
+      Serial.print('\t');
+      Serial.println(mq);
+    } 
+  }
 }
 
 void loop(){}
