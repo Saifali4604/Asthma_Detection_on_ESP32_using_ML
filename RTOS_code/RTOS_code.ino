@@ -24,13 +24,15 @@
 static unsigned long last_interval_ms = 0;
 static uint8_t DHTPIN = 14;
 uint32_t tsLastReport = 0;
-int heart,spo2, mq;
+int heart,spo2, mq, heart_d;
 float t,h;
 
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 DHT dht(DHTPIN, DHT11);
 PulseOximeter pox;
-void onBeatDetected(){}
+void onBeatDetected(){
+  heart_d = 1;
+}
 
 void Edge_impulse(void *pvParameters);
 TaskHandle_t Edge_impulse_Handler;
@@ -49,13 +51,28 @@ void DhT11_sensor(){
   t = dht.readTemperature();
 }
 
+void drawHeart(int x, int y, int size, uint16_t color) {
+  // Draw two circles for the top of the heart
+  tft.fillCircle(x - size / 2, y - size / 3, size / 2, color);  // Left circle
+  tft.fillCircle(x + size / 2, y - size / 3, size / 2, color);  // Right circle
+
+  // Draw a triangle for the bottom of the heart
+  int x0 = x - size;   // Left corner
+  int y0 = y - size / 3;  // Top of the triangle
+  int x1 = x + size;   // Right corner
+  int y1 = y - size / 3;
+  int x2 = x;          // Bottom point
+  int y2 = y + size;
+  tft.fillTriangle(x0, y0, x1, y1, x2, y2, color);
+}
+
 void staticdisplay(){
   tft.fillScreen(ST77XX_BLACK);
   tft.fillRect(0, 0, 240, 40, ST77XX_BLUE);
   tft.setTextColor(ST77XX_WHITE);
   tft.setTextSize(2.8);
   tft.setCursor(10, 10);
-  tft.println("Sensor Readings");
+  tft.println("  Sensor Readings");
 
   // Draw temperature section
   tft.setTextColor(ST77XX_RED);
@@ -86,6 +103,21 @@ void staticdisplay(){
   tft.setTextSize(2);
   tft.setCursor(10, 170);
   tft.print("MQ: ");
+
+  drawHeart(195, 145, 20, ST77XX_RED);
+
+  // Draw logo bars of Edge Impulse
+  tft.fillRect(0, 195, 240, 50, ST77XX_WHITE);
+  tft.fillRoundRect(0+10, 202, 45, 7, 10, 0x059D); 
+  tft.fillCircle(2+10, 205, 5, 0x059D);    
+  tft.fillRoundRect(0+10, 214, 30, 7, 10, 0x07E0);    
+  tft.fillRoundRect(35+10, 214, 15, 7, 10, 0xFDA0);    
+  tft.fillRoundRect(0+10, 226, 55, 7, 10, 0xF800); 
+  tft.fillCircle(2+10, 229, 5, 0xF800);    
+  tft.setTextColor(ST77XX_BLACK);
+  tft.setTextSize(2);
+  tft.setCursor(65+10, 210);
+  tft.print("EDGE IMPULSE");
 
 }
 
@@ -119,7 +151,7 @@ void updateDisplay() {
 
   // Update SpO2 only if it changes
   if (spo2 != prevSpo2) {
-    tft.fillRect(90, 110, 140, 20, ST77XX_BLACK); // Clear only the old value
+    tft.fillRect(90, 110, 80, 20, ST77XX_BLACK); // Clear only the old value
     tft.setTextColor(ST77XX_WHITE);
     tft.setTextSize(2.5);
     tft.setCursor(90, 110);
@@ -130,18 +162,18 @@ void updateDisplay() {
 
   // Update heart rate only if it changes
   if (heart != prevHeart) {
-    tft.fillRect(90, 140, 140, 20, ST77XX_BLACK); // Clear only the old value
+    tft.fillRect(90, 140, 84, 20, ST77XX_BLACK); // Clear only the old value
     tft.setTextColor(ST77XX_WHITE);
     tft.setTextSize(2.5);
     tft.setCursor(90, 140);
     tft.print(heart);
-    tft.print(" bpm");
+    tft.print(".bpm");
     prevHeart = heart;
   }
 
   // Update MQ sensor only if it changes
   if (mq != prevMQ) {
-    tft.fillRect(90, 170, 140, 20, ST77XX_BLACK); // Clear only the old value
+    tft.fillRect(90, 170, 80, 20, ST77XX_BLACK); // Clear only the old value
     tft.setTextColor(ST77XX_WHITE);
     tft.setTextSize(2.5);
     tft.setCursor(90, 170);
@@ -196,10 +228,23 @@ void Sensor_values(void *pvParameters) {
 }
 
 void TFT_display(void *pvParameters) {
-  staticdisplay();
+  staticdisplay(); // only once
+  int a = 0;        
+  unsigned long last = 0;  
+  
   for (;;) {
-    updateDisplay();
-  }  
+    updateDisplay(); //only when the new value is present
+
+    if (heart_d > 0) { // heart beat animation.
+      if (millis() > last + 50) {    
+        drawHeart(195, 145, (a == 1) ? 20 : 15, ST77XX_WHITE);   
+        drawHeart(195, 145, (a == 1) ? 15 : 20, ST77XX_RED);
+        a = !a;
+        last = millis();
+      }
+      heart_d =0;
+    }
+  }
 }
 
 void max30100_value(void *pvParameters) {
