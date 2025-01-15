@@ -3,6 +3,10 @@
 ![image](https://github.com/Saifali4604/Asthma_Detection_on_ESP32_using_ML/blob/main/IMG_20250116_013132.jpg)
 
 
+<p align='center'>
+    <img src="./demo.gif" alt="drawing" width="800"/>
+</p>
+
 # Software Method 1
 ## python Installation
 Download the latest version Python from [https://www.python.org/downloads/] for Windows / linux.
