@@ -4,7 +4,7 @@
 
 
 <p align='center'>
-    <img src="./demo.gif" alt="drawing" width="800"/>
+    <img src="./ezgif.com-video-to-gif-converter.gif" alt="drawing" width="800"/>
 </p>
 
 # Software Method 1
