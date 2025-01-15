@@ -1,5 +1,8 @@
 # Astama_Detection
 
+![image](https://github.com/user-attachments/assets/388db7fd-84b4-4371-b913-66187f95f1e6)
+
+
 # Software Method 1
 ## python Installation
 Download the latest version Python from [https://www.python.org/downloads/] for Windows / linux.
