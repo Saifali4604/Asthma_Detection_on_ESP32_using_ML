@@ -1,6 +1,6 @@
 # Astama_Detection
 
-![image](https://github.com/user-attachments/assets/388db7fd-84b4-4371-b913-66187f95f1e6)
+![image](https://github.com/Saifali4604/Asthma_Detection_on_ESP32_using_ML/blob/main/IMG_20250116_013132.jpg)
 
 
 # Software Method 1
