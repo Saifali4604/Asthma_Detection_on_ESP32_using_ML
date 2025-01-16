@@ -4,7 +4,7 @@ This project integrates an ESP32 microcontroller with multiple sensors to detect
 ![image](https://github.com/Saifali4604/Asthma_Detection_on_ESP32_using_ML/blob/main/IMG_20250116_013132.jpg)
 
 ## Components Used:
-1. ESP32 (ESP-WROOM-32): The central processing unit that collects sensor data, runs the RTOS, and forwards data to Edge Impulse for ML model training.
+1. *ESP32 (ESP-WROOM-32):* The central processing unit that collects sensor data, runs the RTOS, and forwards data to Edge Impulse for ML model training.
 2. Gas Sensor: Measures air quality and the concentration of pollutants that can trigger asthma.
 3. DHT11/DHT22 Sensor: Captures temperature and humidity data, important environmental factors for asthma prediction.
 4. MAX30100 Pulse Oximeter: Measures heart rate and oxygen saturation, which are physiological indicators of asthma.
