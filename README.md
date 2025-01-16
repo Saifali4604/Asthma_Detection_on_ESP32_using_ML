@@ -15,7 +15,7 @@ This project integrates an ESP32 microcontroller with multiple sensors, includin
    Monitors heart rate and oxygen saturation, physiological indicators of asthma.
 6. ### 1.3-inch OLED Display (ST7789 Driver):
    Displays vital information such as respiratory patterns, temperature, humidity, heart rate, and asthma detection status.
-7. #### Edge Impulse Platform:
+7. ### Edge Impulse Platform:
    Used to train a machine learning model using collected sensor data for asthma detection.
 
 <p align='center'>
