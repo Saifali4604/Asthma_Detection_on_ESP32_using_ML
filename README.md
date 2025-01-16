@@ -22,6 +22,38 @@ This project integrates an ESP32 microcontroller with multiple sensors, includin
     <img src="./ezgif.com-video-to-gif-converter.gif" alt="drawing" width="800"/>
 </p>
 
+## Functionality of the Code:
+### Respiratory Monitoring:
+   The INMP441 microphone continuously captures respiratory sounds.
+The data is processed to identify abnormalities, such as wheezing or irregular breathing patterns.
+
+### Data Collection:
+   Sensors collect real-time data on gas levels, temperature, humidity, heart rate, and oxygen saturation.
+
+   
+All data is synchronized using RTOS to ensure efficient multitasking.
+
+### Real-Time Operating System (RTOS):
+   RTOS manages tasks such as data acquisition, sound processing, and display updates.
+High-priority tasks like respiratory monitoring are processed without delay.
+
+### Machine Learning Model:
+   The respiratory and environmental data is forwarded to the Edge Impulse platform for training.
+The trained model, capable of detecting asthma-related patterns, is deployed on the ESP32 for real-time predictions.
+
+### Prediction and Alerts:
+   The ML model analyzes respiratory sounds and environmental data in real-time.
+If abnormal patterns or triggers are detected, the buzzer sounds an alert, and the display shows a warning.
+
+### Display Interface:
+   The OLED screen displays vital data, including respiratory status, temperature, humidity, heart rate, and asthma detection status.
+The interface is intuitive and user-friendly.
+
+### Data Forwarding:
+   The ESP32 is connected to Edge Impulse through a provided code interface.
+Collected data is uploaded for training and refining the ML model.
+
+
 # Software Method 1
 ## python Installation
 Download the latest version Python from [https://www.python.org/downloads/] for Windows / linux.
