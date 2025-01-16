@@ -1,16 +1,22 @@
 # Astama_Detection
-This project integrates an ESP32 microcontroller with multiple sensors to detect and predict asthma in humans using real-time data collection and machine learning. The system collects data such as air quality, temperature, humidity, and heart rate, which are critical indicators of asthma. The collected data is processed in real time using an RTOS-based approach for multitasking and efficiency. The machine learning model, trained using Edge Impulse, analyzes the sensor data to identify patterns and predict asthma conditions. The processed data and results are displayed on a 1.3-inch OLED display, providing a user-friendly interface for monitoring.
-
+This project integrates an ESP32 microcontroller with multiple sensors, including a MEMS INMP441 microphone, to detect and predict asthma in humans. The system captures respiratory sounds, air quality, temperature, humidity, heart rate, and oxygen saturation, which are critical indicators of asthma. The MEMS microphone, placed on the chest, monitors respiratory operations to detect abnormalities in breathing patterns. Real-time data collection and processing are achieved using an RTOS-based approach, ensuring efficient multitasking. The collected data is used to train a machine learning (ML) model on the Edge Impulse platform, enabling the system to predict asthma conditions. The results are displayed on a 1.3-inch OLED screen, and alerts are provided through a buzzer in critical situations.
 ![image](https://github.com/Saifali4604/Asthma_Detection_on_ESP32_using_ML/blob/main/IMG_20250116_013132.jpg)
 
 ## Components Used:
-1. *ESP32 (ESP-WROOM-32):* The central processing unit that collects sensor data, runs the RTOS, and forwards data to Edge Impulse for ML model training.
-2. Gas Sensor: Measures air quality and the concentration of pollutants that can trigger asthma.
-3. DHT11/DHT22 Sensor: Captures temperature and humidity data, important environmental factors for asthma prediction.
-4. MAX30100 Pulse Oximeter: Measures heart rate and oxygen saturation, which are physiological indicators of asthma.
-5. 1.3-inch OLED Display (ST7789 Driver): Displays the processed data, such as temperature, humidity, heart rate, and asthma detection results.
-6. Passive Buzzer: Alerts the user in case of critical conditions.
-7. Edge Impulse Platform: Used for training the machine learning model based on collected sensor data.
+1. ESP32 (ESP-WROOM-32):
+   The central processing unit that collects sensor data, processes it, and forwards it to Edge Impulse for training the ML model.
+2. MEMS Microphone (INMP441):
+   Monitors respiratory sounds when placed on the chest, enabling the system to detect abnormal breathing patterns indicative of asthma.
+3. Gas Sensor:
+    Measures air quality and pollutants that may trigger asthma.
+4. DHT11/DHT22 Sensor:
+   Captures temperature and humidity, environmental factors that significantly affect asthma conditions.
+5. MAX30100 Pulse Oximeter:
+   Monitors heart rate and oxygen saturation, physiological indicators of asthma.
+6. 1.3-inch OLED Display (ST7789 Driver):
+   Displays vital information such as respiratory patterns, temperature, humidity, heart rate, and asthma detection status.
+7. Edge Impulse Platform:
+   Used to train a machine learning model using collected sensor data for asthma detection.
 
 <p align='center'>
     <img src="./ezgif.com-video-to-gif-converter.gif" alt="drawing" width="800"/>
