@@ -3,19 +3,19 @@ This project integrates an ESP32 microcontroller with multiple sensors, includin
 ![image](https://github.com/Saifali4604/Asthma_Detection_on_ESP32_using_ML/blob/main/IMG_20250116_013132.jpg)
 
 ## Components Used:
-1. ESP32 (ESP-WROOM-32):
+1. ### ESP32 (ESP-WROOM-32):
    The central processing unit that collects sensor data, processes it, and forwards it to Edge Impulse for training the ML model.
-2. MEMS Microphone (INMP441):
+2. ### MEMS Microphone (INMP441):
    Monitors respiratory sounds when placed on the chest, enabling the system to detect abnormal breathing patterns indicative of asthma.
-3. Gas Sensor:
+3. ### Gas Sensor:
     Measures air quality and pollutants that may trigger asthma.
-4. DHT11/DHT22 Sensor:
+4. ### DHT11/DHT22 Sensor:
    Captures temperature and humidity, environmental factors that significantly affect asthma conditions.
-5. MAX30100 Pulse Oximeter:
+5. ### MAX30100 Pulse Oximeter:
    Monitors heart rate and oxygen saturation, physiological indicators of asthma.
-6. 1.3-inch OLED Display (ST7789 Driver):
+6. ### 1.3-inch OLED Display (ST7789 Driver):
    Displays vital information such as respiratory patterns, temperature, humidity, heart rate, and asthma detection status.
-7. Edge Impulse Platform:
+7. #### Edge Impulse Platform:
    Used to train a machine learning model using collected sensor data for asthma detection.
 
 <p align='center'>
