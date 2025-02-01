@@ -54,7 +54,7 @@ The interface is intuitive and user-friendly.
 Collected data is uploaded for training and refining the ML model.
 
 
-# Software Method 1
+# Software 
 ## python Installation
 Download the latest version Python from [https://www.python.org/downloads/] for Windows / linux.
 
@@ -132,22 +132,42 @@ npm install -g edge-impulse-cli
    ```
 8. Sample is been Uploaded.
 
-# Method 2
-If you have issues installing the CLI you can also collect data from fully-supported development boards directly using recent versions of Google Chrome and Microsoft Edge. 
 
+----
+# Telegram Bot
 
-Collecting data from real devices is the first step of any embedded machine learning solution, and to make this even easier we’re adding support for Web Serial to the Edge Impulse Studio.
+## Step 1: Create a Telegram Bot
+1. Open Telegram and search for [BotFather](https://t.me/BotFather).
+2. Type ```/newbot``` to create a new bot.
+3. Follow the instructions mentioned in a chat.
+4. After creation, BotFather will provide you with a Bot Token. Save this token, as you’ll need it later.
+5. Type ```/setprivacy```
+6. Select the bot, and then select "Disable".
+7. Type ```/setcommands```
+8. Select the bot, and then type " status - Get all health parameters ".
 
+## Step 2: Get Your Chat ID / Group ID
+### private updates
+1. Open Telegram and search [IDBot](https://t.me/y9idBot)
+2. open it and clic on start.
+3. The bot will return the ID, this ID is called Chat ID.
+   
+### Group updates
+1. Add Bot to the Group.
+2. Set the bot as an Admin.
+3. Open this link in your browser (replace with your bot token):
 
-This means that you can now collect data from any fully-supported development board straight from your browser, without any other tools installed on your computer.
+```https://api.telegram.org/bot<token>/getUpdates```
 
+Ex: ```https://api.telegram.org/bot8151800946:AAHP_kCRHGdG6ioc3ekMNnbMlE1sezd5nDA/getUpdates```
 
-To get started just open the latest version of Google Chrome or Microsoft Edge, go to the data acquisition page in the Studio, and click ’Connect using WebUSB’.
+4. Look for "chat": {"id": -XXXXXXXXX, "title": "Your Group Name"}.
+5. XXXXXXXXX represents the chat id.
 
+## Step 3: Set Up Your another ESP32 to Send Messages to Telegram
+1. we will be using [witnessmenow’s Universal-Arduino-Telegram-Bot library from GitHub](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot).
+Extract the library and add it to the libraries folder path of Arduino IDE.
 
-Select your development board, and you’re done.
-
-
-You can now collect data from any of the built-in sensors, see a visual preview on boards with a camera, and verify your model.
-
-[https://edgeimpulse.com/blog/collect-sensor-data-straight-from-your-web-browser/]
+2. Open ML_telegram code and replace the BOTtoken and CHAT_ID with your token and ID.
+3. Replace the Wifi credentials.
+4. upload ML_telegram code.
