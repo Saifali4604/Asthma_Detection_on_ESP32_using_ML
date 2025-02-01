@@ -159,7 +159,7 @@ npm install -g edge-impulse-cli
 
 ```https://api.telegram.org/bot<token>/getUpdates```
 
-Ex: ```https://api.telegram.org/bot8151800946:AAHP_kCRHGdG6ioc3ekMNnbMlE1sezd5nDA/getUpdates```
+Ex: ```https://api.telegram.org/bot8151804527:AAHP_kGHTDYdG6ioc3ekMNnbMlE1sezd5nDA/getUpdates```
 
 4. Look for "chat": {"id": -XXXXXXXXX, "title": "Your Group Name"}.
 5. XXXXXXXXX represents the chat id.
