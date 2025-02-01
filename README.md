@@ -173,4 +173,4 @@ Extract the library and add it to the libraries folder path of Arduino IDE.
 4. upload ML_telegram code.
    ![image](https://github.com/Saifali4604/Asthma_Detection_on_ESP32_using_ML/blob/main/WhatsApp%20Image%202025-02-02%20at%2003.00.09_aaa3cf97.jpg)
 
-   ![image](https://github.com/Saifali4604/Asthma_Detection_on_ESP32_using_ML/blob/main/IMG_20250116_013132.jpg)
+   ![image](https://github.com/Saifali4604/Asthma_Detection_on_ESP32_using_ML/blob/main/WhatsApp%20Image%202025-02-02%20at%2003.00.53_55578728.jpg)
