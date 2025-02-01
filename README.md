@@ -171,3 +171,6 @@ Extract the library and add it to the libraries folder path of Arduino IDE.
 2. Open ML_telegram code and replace the BOTtoken and CHAT_ID with your token and ID.
 3. Replace the Wifi credentials.
 4. upload ML_telegram code.
+   ![image](https://github.com/Saifali4604/Asthma_Detection_on_ESP32_using_ML/blob/main/IMG_20250116_013132.jpg)
+
+   ![image](https://github.com/Saifali4604/Asthma_Detection_on_ESP32_using_ML/blob/main/IMG_20250116_013132.jpg)
