@@ -14,7 +14,7 @@
 #define REPORTING_PERIOD_MS  500
 #define d2 2
 #define mqsensor 34
-#define TFT_CS   13   // Chip select pin
+#define TFT_CS   19   // Chip select pin
 #define TFT_DC   4  // Data/Command pin
 #define TFT_RST  5  // Reset pin (can be set to -1 if not used)
 
