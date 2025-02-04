@@ -11,7 +11,7 @@
 #include <Adafruit_ST7789.h> // Hardware-specific library for ST7789
 #include "image.h"
 
-#define REPORTING_PERIOD_MS  500
+#define REPORTING_PERIOD_MS  400
 #define d2 2
 #define mqsensor 34
 #define TFT_CS   19   // Chip select pin
@@ -33,7 +33,7 @@ SemaphoreHandle_t tftMutex ;
 int16_t i2sData[1024];
 int32_t sum = 0;
 int R = 1;
-int sensitivity = 100; // Sensitivity variable (0 to 100)
+int sensitivity = 90; // Sensitivity variable (0 to 100)
 
 #define I2S_WS 15    // I2S word select pin
 #define I2S_SCK 14   // I2S clock pin
@@ -87,6 +87,7 @@ void onBeatDetected(){
 
 void setup() {
   Serial.begin(115200);
+  Serial.println(esp_get_free_heap_size());
   i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
   i2s_set_pin(I2S_NUM_0, &pin_config);
   i2s_set_clk(I2S_NUM_0, 44100, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_MONO);
@@ -137,6 +138,9 @@ void Sensor_values(void *pvParameters) {
       temp =0;
     }
     vTaskDelay(pdMS_TO_TICKS(100)); // Delay of 0.5s
+    // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
+    // Serial.print("Task sensor Stack Left: ");
+    // Serial.println(stackLeft);
   }  
 }
 
@@ -159,9 +163,9 @@ void max30100_value(void *pvParameters) {
     if (millis() - tsLastReport > REPORTING_PERIOD_MS) {
       hr = hr + pox.getHeartRate();
       k++;
-      if(k==10){
+      if(k==5){
         k=0;
-        heart = hr/10;
+        heart = hr/5;
         hr =0;
       }
       spo2 = pox.getSpO2();
@@ -172,7 +176,10 @@ void max30100_value(void *pvParameters) {
       // }
       tsLastReport = millis();
     }
-    vTaskDelay(pdMS_TO_TICKS(100)); // Delay of 100 ms
+    vTaskDelay(pdMS_TO_TICKS(50)); // Delay of 100 ms
+    // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
+    // Serial.print("Task pulse Stack Left: ");
+    // Serial.println(stackLeft);
   }  
 }
 
@@ -202,36 +209,56 @@ void displayNoiseIndication(int noiseLevel) {
 }
 
 void Lungs_monitor(void *pvParameters) {  
-  const float highPassFactor = 0.98; // High-pass filter coefficient
-  float prevFilteredValue = 0;      // For high-pass filter
-  size_t bytesRead;
+  // const float highPassFactor = 0.98; // High-pass filter coefficient
+  // float prevFilteredValue = 0;      // For high-pass filter
+  // size_t bytesRead;
 
-  for (;;) {
-    // Read audio data
+  // for (;;) {
+  //   // Read audio data
+  //   i2s_read(I2S_NUM_0, i2sData, sizeof(i2sData), &bytesRead, portMAX_DELAY);
+
+  //   // Process audio data
+  //   sum = 0;
+  //   int sampleCount = bytesRead / 2; // Each sample is 16 bits (2 bytes)
+  //   for (int i = 0; i < sampleCount; ++i) {
+  //     int16_t sample = i2sData[i]; // Read each 16-bit sample
+
+  //     // Apply high-pass filter to remove low-frequency noise
+  //     float filteredSample = sample - (highPassFactor * prevFilteredValue);
+  //     prevFilteredValue = filteredSample;
+
+  //     // Sum the absolute values for RMS calculation
+  //     sum += abs(filteredSample);
+  //   }
+
+  //   // Calculate RMS
+  //   rms = sum / sampleCount;
+  //   // Map RMS to a respiratory activity level
+  //   int maxRMS = map(sensitivity, 0, 100, 500, 50); // Adjust based on observed breathing amplitude
+  //   respLevel = map(rms, 0, maxRMS, 0, 100);    // Map RMS to percentage
+  //   respLevel = constrain(respLevel, 0, 100);       // Constrain to 0-100%
+  //   displayNoiseIndication(respLevel);
+  //   vTaskDelay(pdMS_TO_TICKS(100));
+  // }
+
+  for(;;){
+    size_t bytesRead;
     i2s_read(I2S_NUM_0, i2sData, sizeof(i2sData), &bytesRead, portMAX_DELAY);
-
-    // Process audio data
+    // Calculate RMS value of the audio signal
     sum = 0;
-    int sampleCount = bytesRead / 2; // Each sample is 16 bits (2 bytes)
-    for (int i = 0; i < sampleCount; ++i) {
-      int16_t sample = i2sData[i]; // Read each 16-bit sample
-
-      // Apply high-pass filter to remove low-frequency noise
-      float filteredSample = sample - (highPassFactor * prevFilteredValue);
-      prevFilteredValue = filteredSample;
-
-      // Sum the absolute values for RMS calculation
-      sum += abs(filteredSample);
+    for (int i = 0; i < bytesRead / 2; ++i) {
+      sum += abs(i2sData[i]); // Use absolute value for higher sensitivity to small sounds
     }
-
-    // Calculate RMS
-    rms = sum / sampleCount;
-    // Map RMS to a respiratory activity level
-    int maxRMS = map(sensitivity, 0, 100, 500, 50); // Adjust based on observed breathing amplitude
-    respLevel = map(rms, 0, maxRMS, 0, 100);    // Map RMS to percentage
-    respLevel = constrain(respLevel, 0, 100);       // Constrain to 0-100%
-    displayNoiseIndication(respLevel);
+    rms = sum / (bytesRead / 2);
+    // Convert RMS to a percentage for noise level (adjusted for sensitivity)
+    int maxRMS = map(sensitivity, 0, 100, 1000, 100); // Adjust maxRMS based on sensitivity
+    respLevel = map(rms, 0, maxRMS, 0, 100); // Adjust scale as needed
+    respLevel = constrain(respLevel, 0, 100); // Constrain the noise level to 100%
+    displayNoiseIndication(respLevel); // Display noise level as a bar on the TFT display
     vTaskDelay(pdMS_TO_TICKS(100));
+    // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
+    // Serial.print("Task mic Stack Left: ");
+    // Serial.println(stackLeft);
   }
 }
  
@@ -256,6 +283,9 @@ void Edge_impulse(void *pvParameters) {
       Serial.print(rms);
       Serial.print('\t');
       Serial.println(respLevel);
+      // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
+      // Serial.print("Task edge Stack Left: ");
+      // Serial.println(stackLeft);
     } 
   }
 }
@@ -424,6 +454,9 @@ void TFT_display(void *pvParameters) {
       }
       heart_d = 0;
     }
+    // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
+    // Serial.print("Task display Stack Left: ");
+    // Serial.println(stackLeft);
   }
 }
 
