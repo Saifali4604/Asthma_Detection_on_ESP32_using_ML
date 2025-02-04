@@ -3,7 +3,7 @@
 #include <UniversalTelegramBot.h>
 
 #define Button 0  // ESP32 Boot button (GPIO 0)
-#define D2 2  // Built in LED
+
 
 // Your Telegram Bot Token & Chat ID
 #define BOTtoken "8129554371:AAHJaJF4PlQAcAUehriYkgrjcuBypQCjdLA"
@@ -32,7 +32,7 @@ void wifisetup()
     if(WiFi.status() != WL_CONNECTED)
     {
       Serial.println("Connecting to WiFi...");
-      digitalWrite(D2, LOW);
+      digitalWrite(LED_BUILTIN, HIGH); //off
       WiFi.mode(WIFI_STA);
       WiFi.begin(ssid, password);
       while (WiFi.status() != WL_CONNECTED) {
@@ -42,7 +42,7 @@ void wifisetup()
     }
     else
     {
-      digitalWrite(D2, HIGH);
+      digitalWrite(LED_BUILTIN, LOW); //ON
       if(w==0)
       {
         Serial.println("\n✅ WiFi Connected!");
@@ -57,7 +57,8 @@ void setup() {
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
-  pinMode(D2, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH); //off
   pinMode(Button, INPUT_PULLUP);
   while (WiFi.status() != WL_CONNECTED) {
     delay(200);
@@ -70,7 +71,8 @@ void setup() {
 //////////////////////////////////////////////////// Uart Data /////////////////////////////////////////////
 
 void Uart_SerialTask(void *pvParameters) {
-  Serial1.begin(115200, SERIAL_8N1, 16, 17);
+  Serial1.begin(115200, SERIAL_8N1, 6, 43); //new rx, default tx Xiao ESP32S3
+  //Serial1.begin(115200, SERIAL_8N1, 16, 17); //new rx, default tx ESP32
   for(;;){
     if (Serial1.available()) {
       String currentData = Serial1.readStringUntil('\n');  // Read until newline character
@@ -131,12 +133,13 @@ void Telegram(){
 }
 //////////////////////////////////////////////////// Normal Code /////////////////////////////////////////////
 
+
 void loop() {
   wifisetup();
   Telegram();
   if (digitalRead(Button) == LOW) {
     // Button pressed, turn on D2 LED
-    digitalWrite(D2, LOW);
+    digitalWrite(LED_BUILTIN, HIGH); //OFF
     Serial.println("📤 Sending test message to Telegram...");
     bool sent = bot.sendMessage(CHAT_ID, "⚠️ Astama detected! Hurry up and take action!");
 
