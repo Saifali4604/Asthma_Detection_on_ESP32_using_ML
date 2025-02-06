@@ -18,7 +18,7 @@ const float highPassFactor = 0.99;
 
 // If the system is too sensitive (detecting noise instead of breathing), then increse both
 //If the system is not detecting weak breathing properly,Then Decrease both
-int s1 = 1200, s2 = 350;
+int s1 = 1200, s2 = 450;
 
 #define REPORTING_PERIOD_MS  400
 #define d2 2
@@ -260,8 +260,6 @@ void Edge_impulse(void *pvParameters) {
       Serial.print(body_temp);
       Serial.print('\t');
       Serial.print(mq);
-      Serial.print('\t');
-      Serial.print(rms);
       Serial.print('\t');
       Serial.println(respLevel);
       // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
