@@ -3,13 +3,22 @@
 #include <freertos/task.h>
 #include <freertos/event_groups.h>
 #include "DHT.h"
-#include <MAX30100_PulseOximeter.h> //max30100
+#include "MAX30100_PulseOximeter.h" //max30100
 #include <Wire.h> 
 #include <driver/i2s.h> // mic
 #include <SPI.h> //display
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7789.h> // Hardware-specific library for ST7789
 #include "image.h"
+
+/////////////////////////////////////////////////////////////////////
+//If breathing signals fluctuate too much
+//Increase the high-pass filter factor
+const float highPassFactor = 0.99;
+
+// If the system is too sensitive (detecting noise instead of breathing), then increse both
+//If the system is not detecting weak breathing properly,Then Decrease both
+int s1 = 1200, s2 = 350;
 
 #define REPORTING_PERIOD_MS  400
 #define d2 2
@@ -82,32 +91,11 @@ void TFT_display(void *pvParameters);
 TaskHandle_t TFT_display_Handler;
 
 void onBeatDetected(){
-  heart_d = 1;
 }
 
 void setup() {
   Serial.begin(115200);
   Serial.println(esp_get_free_heap_size());
-  i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
-  i2s_set_pin(I2S_NUM_0, &pin_config);
-  i2s_set_clk(I2S_NUM_0, 44100, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_MONO);
-  dht.begin();
-  tft.init(240, 240, SPI_MODE2);    // Init ST7789 display 240x240 pixels
-  tft.setRotation(3);
-  tft.fillRect(0, 0, 240, 240, ST77XX_BLACK);
-  tft.drawBitmap(0,0,RV_logo,250,250,ST77XX_WHITE);
-  delay(2000);
-
-  Serial.print("Initializing pulse oximeter..");
-  if (!pox.begin()) {
-    Serial.println("FAILED");
-    // ESP.restart();
-  } 
-  else {
-    Serial.println("SUCCESS");
-  }
-  pox.setIRLedCurrent(MAX30100_LED_CURR_17_4MA);//increase the intensity of IR light,
-  pox.setOnBeatDetectedCallback(onBeatDetected);
   
   tftMutex = xSemaphoreCreateMutex();
   
@@ -121,6 +109,7 @@ void setup() {
 /////////////////////////////////////////////////// DHT11 and MQ ///////////////////////////////////////////////////
 
 void Sensor_values(void *pvParameters) {
+  dht.begin();
   int mq_v, j;
   float temp;
   for (;;) {
@@ -146,45 +135,52 @@ void Sensor_values(void *pvParameters) {
 
 /////////////////////////////////////////////////// max30100 ///////////////////////////////////////////////////
 
-// void configureMax30100() {
-//   sensor.setMode(MAX30100_MODE_SPO2_HR);
-//   sensor.setLedsCurrent(MAX30100_LED_CURR_50MA, MAX30100_LED_CURR_27_1MA);
-//   sensor.setLedsPulseWidth(MAX30100_SPC_PW_1600US_16BITS);
-//   sensor.setSamplingRate(MAX30100_SAMPRATE_100HZ);
-//   sensor.setHighresModeEnabled(true);
-// }
-
 void max30100_value(void *pvParameters) {
-  //configureMax30100();
-  //MAX30100 sensor;
-  int hr , k;
+  Serial.print("Initializing pulse oximeter..");
+  // Initialize sensor
+  if (!pox.begin()) {
+      Serial.println("FAILED");
+      for(;;);
+  } else {
+      Serial.println("SUCCESS");
+  }
+  pox.setIRLedCurrent(MAX30100_LED_CURR_20_8MA);
+  pox.setOnBeatDetectedCallback(onBeatDetected);
+
   for (;;) {
     pox.update();
     if (millis() - tsLastReport > REPORTING_PERIOD_MS) {
-      hr = hr + pox.getHeartRate();
-      k++;
-      if(k==5){
-        k=0;
-        heart = hr/5;
-        hr =0;
+      int ht = pox.getHeartRate();
+      int sp = pox.getSpO2();
+      //Sp02
+      if(sp >= 100){
+        spo2 = 99;
       }
-      spo2 = pox.getSpO2();
-      // sensor.startTemperatureSampling();
-      // if (sensor.isTemperatureReady()) {
-      //   body_temp = sensor.retrieveTemperature();
-      //   body_temp = (body_temp * 9.0) / 5.0 + 32.0 ;
-      // }
+      else if(heart == 0){
+        spo2 = 0;
+      }
+      else{
+        spo2 = sp + 2;
+      }
+      //Heart Rate
+      if(ht >= 100){
+        heart = 99;
+      }
+      else{
+        heart = ht;
+      }
+      //animation
+      if(heart > 0){
+        heart_d = 1;
+      }
       tsLastReport = millis();
     }
-    vTaskDelay(pdMS_TO_TICKS(50)); // Delay of 100 ms
-    // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
-    // Serial.print("Task pulse Stack Left: ");
-    // Serial.println(stackLeft);
   }  
 }
 
 /////////////////////////////////////////////////// MEMS microphone ///////////////////////////////////////////////////
 
+// Sound Animation 
 void displayNoiseIndication(int noiseLevel) {
   // Acquire mutex to access TFT display
   if (xSemaphoreTake(tftMutex, portMAX_DELAY) == pdTRUE) {
@@ -209,58 +205,43 @@ void displayNoiseIndication(int noiseLevel) {
 }
 
 void Lungs_monitor(void *pvParameters) {  
-  // const float highPassFactor = 0.98; // High-pass filter coefficient
-  // float prevFilteredValue = 0;      // For high-pass filter
-  // size_t bytesRead;
+  i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
+  i2s_set_pin(I2S_NUM_0, &pin_config);
+  i2s_set_clk(I2S_NUM_0, 44100, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_MONO);
 
-  // for (;;) {
-  //   // Read audio data
-  //   i2s_read(I2S_NUM_0, i2sData, sizeof(i2sData), &bytesRead, portMAX_DELAY);
+  float prevFilteredValue = 0;      // For high-pass filter
+  size_t bytesRead;
 
-  //   // Process audio data
-  //   sum = 0;
-  //   int sampleCount = bytesRead / 2; // Each sample is 16 bits (2 bytes)
-  //   for (int i = 0; i < sampleCount; ++i) {
-  //     int16_t sample = i2sData[i]; // Read each 16-bit sample
-
-  //     // Apply high-pass filter to remove low-frequency noise
-  //     float filteredSample = sample - (highPassFactor * prevFilteredValue);
-  //     prevFilteredValue = filteredSample;
-
-  //     // Sum the absolute values for RMS calculation
-  //     sum += abs(filteredSample);
-  //   }
-
-  //   // Calculate RMS
-  //   rms = sum / sampleCount;
-  //   // Map RMS to a respiratory activity level
-  //   int maxRMS = map(sensitivity, 0, 100, 500, 50); // Adjust based on observed breathing amplitude
-  //   respLevel = map(rms, 0, maxRMS, 0, 100);    // Map RMS to percentage
-  //   respLevel = constrain(respLevel, 0, 100);       // Constrain to 0-100%
-  //   displayNoiseIndication(respLevel);
-  //   vTaskDelay(pdMS_TO_TICKS(100));
-  // }
-
-  for(;;){
-    size_t bytesRead;
+  for (;;) {
     i2s_read(I2S_NUM_0, i2sData, sizeof(i2sData), &bytesRead, portMAX_DELAY);
-    // Calculate RMS value of the audio signal
+
     sum = 0;
-    for (int i = 0; i < bytesRead / 2; ++i) {
-      sum += abs(i2sData[i]); // Use absolute value for higher sensitivity to small sounds
+    int sampleCount = bytesRead / 2; // Each sample is 16 bits (2 bytes)
+    for (int i = 0; i < sampleCount; ++i) {
+      int16_t sample = i2sData[i]; // Read each 16-bit sample
+
+      // Apply high-pass filter to remove low-frequency noise
+      float filteredSample = sample - (highPassFactor * prevFilteredValue);
+      prevFilteredValue = filteredSample;
+
+      // Sum the absolute values for RMS calculation
+      sum += abs(filteredSample);
     }
-    rms = sum / (bytesRead / 2);
-    // Convert RMS to a percentage for noise level (adjusted for sensitivity)
-    int maxRMS = map(sensitivity, 0, 100, 1000, 100); // Adjust maxRMS based on sensitivity
-    respLevel = map(rms, 0, maxRMS, 0, 100); // Adjust scale as needed
-    respLevel = constrain(respLevel, 0, 100); // Constrain the noise level to 100%
-    displayNoiseIndication(respLevel); // Display noise level as a bar on the TFT display
+
+    // Calculate RMS
+    rms = sum / sampleCount;
+    
+
+    // Map RMS to a respiratory activity level
+    int maxRMS = map(sensitivity, 0, 100, s1, s2); // Adjust based on observed breathing amplitude
+    respLevel = map(rms, 0, maxRMS, 0, 100);
+    respLevel = constrain(respLevel, 0, 100); // Constrain to 0-100%
+    
+    displayNoiseIndication(respLevel);
     vTaskDelay(pdMS_TO_TICKS(100));
-    // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
-    // Serial.print("Task mic Stack Left: ");
-    // Serial.println(stackLeft);
   }
 }
+
  
 /////////////////////////////////////////////////// Edge Impulse ///////////////////////////////////////////////////
 
@@ -292,6 +273,7 @@ void Edge_impulse(void *pvParameters) {
 
 /////////////////////////////////////////////////// Display ///////////////////////////////////////////////////
 
+// Heart Animation
 void drawHeart(int x, int y, int size, uint16_t color) {
   // Draw two circles for the top of the heart
   tft.fillCircle(x - size / 2, y - size / 3, size / 2, color);  // Left circle
@@ -307,6 +289,7 @@ void drawHeart(int x, int y, int size, uint16_t color) {
   tft.fillTriangle(x0, y0, x1, y1, x2, y2, color);
 }
 
+// Display the constant content
 void staticdisplay(){
   tft.fillScreen(ST77XX_BLACK);
 
@@ -357,6 +340,7 @@ void staticdisplay(){
 
 }
 
+// Display the content 
 void updateDisplay() {
   static float prevTemp = -1;
   static float prevHumidity = -1;
@@ -434,8 +418,17 @@ void updateDisplay() {
   }
 }
 
+// Display Main Task
 void TFT_display(void *pvParameters) {
-  staticdisplay(); // only once
+  if (xSemaphoreTake(tftMutex, portMAX_DELAY) == pdTRUE) {
+    tft.init(240, 240, SPI_MODE2);    // Init ST7789 display 240x240 pixels
+    tft.setRotation(3);
+    tft.fillRect(0, 0, 240, 240, ST77XX_BLACK);
+    tft.drawBitmap(0,0,RV_logo,250,250,ST77XX_WHITE);
+    delay(2000);
+    staticdisplay(); // only once
+    xSemaphoreGive(tftMutex);
+  }
   int a = 0;
   unsigned long last = 0;
 
