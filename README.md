@@ -1,6 +1,6 @@
 # Astama_Detection
 This project integrates an ESP32 microcontroller with multiple sensors, including a MEMS INMP441 microphone, to detect and predict asthma in humans. The system captures respiratory sounds, air quality, temperature, humidity, heart rate, and oxygen saturation, which are critical indicators of asthma. The MEMS microphone, placed on the chest, monitors respiratory operations to detect abnormalities in breathing patterns. Real-time data collection and processing are achieved using an RTOS-based approach, ensuring efficient multitasking. The collected data is used to train a machine learning (ML) model on the Edge Impulse platform, enabling the system to predict asthma conditions. The results are displayed on a 1.3-inch OLED screen, and alerts are provided through a buzzer in critical situations.
-![image](https://github.com/Saifali4604/Asthma_Detection_on_ESP32_using_ML/blob/main/IMG_20250116_013132.jpg)
+![image](https://github.com/Saifali4604/Asthma_Detection_on_ESP32_using_ML/blob/main/Gallery/IMG_20250116_013132.jpg)
 
 ## Components Used:
 1. ### ESP32 (ESP-WROOM-32):
@@ -19,7 +19,7 @@ This project integrates an ESP32 microcontroller with multiple sensors, includin
    Used to train a machine learning model using collected sensor data for asthma detection.
 
 <p align='center'>
-    <img src="./ezgif.com-video-to-gif-converter.gif" alt="drawing" width="800"/>
+    <img src="./Gallery/ezgif.com-video-to-gif-converter.gif" alt="drawing" width="800"/>
 </p>
 
 ## Functionality of the Code:
@@ -171,6 +171,6 @@ Extract the library and add it to the libraries folder path of Arduino IDE.
 2. Open ML_telegram code and replace the BOTtoken and CHAT_ID with your token and ID.
 3. Replace the Wifi credentials.
 4. upload ML_telegram code.
-   ![image](https://github.com/Saifali4604/Asthma_Detection_on_ESP32_using_ML/blob/main/WhatsApp%20Image%202025-02-02%20at%2003.00.09_aaa3cf97.jpg)
+   ![image](https://github.com/Saifali4604/Asthma_Detection_on_ESP32_using_ML/blob/main/Gallery/WhatsApp%20Image%202025-02-02%20at%2003.00.09_aaa3cf97.jpg)
 
-   ![image](https://github.com/Saifali4604/Asthma_Detection_on_ESP32_using_ML/blob/main/WhatsApp%20Image%202025-02-02%20at%2003.04.15_3a5625e9.jpg)
+   ![image](https://github.com/Saifali4604/Asthma_Detection_on_ESP32_using_ML/blob/main/Gallery/WhatsApp%20Image%202025-02-02%20at%2003.04.15_3a5625e9.jpg)
