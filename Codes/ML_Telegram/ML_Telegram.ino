@@ -7,8 +7,8 @@
 
 // Your Telegram Bot Token & Chat ID
 #define BOTtoken "8129554371:AAHJaJF4PlQAcAUehriYkgrjcuBypQCjdLA"
-//#define CHAT_ID "-1002487084414"  // Your Group Chat ID
-#define CHAT_ID "7166901221"  // Saif's private Chat ID
+#define CHAT_ID "-1002487084414"  // Your Group Chat ID
+//#define CHAT_ID "7166901221"  // Saif's private Chat ID
 // Your WiFi credentials
 const char* ssid = "Saif";
 const char* password = "a1234567";
@@ -82,7 +82,6 @@ void Uart_SerialTask(void *pvParameters) {
       int index4 = currentData.indexOf('\t', index3 + 1);
       int index5 = currentData.indexOf('\t', index4 + 1);
       int index6 = currentData.indexOf('\t', index5 + 1);
-      int index7 = currentData.indexOf('\t', index6 + 1);
       // Extract each value based on the tabs
       t = currentData.substring(0, index1);
       h = currentData.substring(index1 + 1, index2);
@@ -90,8 +89,8 @@ void Uart_SerialTask(void *pvParameters) {
       hR = currentData.substring(index3 + 1, index4);
       body_temp = currentData.substring(index4 + 1, index5);
       mq = currentData.substring(index5 + 1, index6);
-      rms = currentData.substring(index6 + 1, index7);
-      respLevel = currentData.substring(index7 + 1);
+      respLevel = currentData.substring(index6 + 1);
+      //respLevel = currentData.substring(index7 + 1);
     }
     
   }
@@ -114,7 +113,7 @@ void handleNewMessages(int numNewMessages) {// Function to handle received messa
                           "❤️ Heart Rate: " + String(hR) + " bpm\n" +
                           "🩸 SpO2: " + String(spo2) + "%\n" +
                           "🤒 Body Temperature: " + String(body_temp) + "°F\n" +
-                          "💨 Breathing Rate: " + String(respLevel) + " breaths/min";
+                          "💨 Breathing intensity: " + String(respLevel) + "";
       bot.sendMessage(chat_id, sensorData, "");
       t = ""; h = ""; spo2 = ""; hR = ""; body_temp = ""; mq = ""; rms = ""; respLevel = "";
     }
