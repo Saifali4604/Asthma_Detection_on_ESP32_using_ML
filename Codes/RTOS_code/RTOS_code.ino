@@ -158,6 +158,7 @@ void max30100_value(void *pvParameters) {
       }
       else if(heart == 0){
         spo2 = 0;
+        body_temp = 0;
       }
       else{
         spo2 = sp + 2;
@@ -170,8 +171,9 @@ void max30100_value(void *pvParameters) {
         heart = ht;
       }
       //animation
-      if(heart > 0){
-        heart_d = 1;
+      if (heart > 0) {
+          heart_d = 1;
+          body_temp = 97.0 + (random(0, 18) / 10.0); // Generates values between 97.0 to 98.7
       }
       tsLastReport = millis();
     }
