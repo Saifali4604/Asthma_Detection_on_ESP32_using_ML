@@ -18,7 +18,7 @@ const float highPassFactor = 0.99;
 
 // If the system is too sensitive (detecting noise instead of breathing), then increse both
 //If the system is not detecting weak breathing properly,Then Decrease both
-int s1 = 1200, s2 = 450;
+int s1 = 1200, s2 = 500;
 
 #define REPORTING_PERIOD_MS  400
 #define d2 2
@@ -26,12 +26,12 @@ int s1 = 1200, s2 = 450;
 #define TFT_CS   19   // Chip select pin
 #define TFT_DC   4  // Data/Command pin
 #define TFT_RST  5  // Reset pin (can be set to -1 if not used)
-
+#define DHTPIN  27 // 17
 #define FREQUENCY_HZ 50
 #define INTERVAL_MS (1000 / (FREQUENCY_HZ + 1))
 
 static unsigned long last_interval_ms = 0;
-static uint8_t DHTPIN = 27;
+
 uint32_t tsLastReport = 0;
 int heart,spo2, mq, heart_d, respLevel;
 float t, h, rms, body_temp;
@@ -100,7 +100,7 @@ void setup() {
   tftMutex = xSemaphoreCreateMutex();
   
   xTaskCreatePinnedToCore(Edge_impulse, "Edge Impulse", 2048, NULL, 1, &Edge_impulse_Handler, 0);
-  xTaskCreatePinnedToCore(Lungs_monitor, "Lungs monitor", 2048, NULL, 1, &Lungs_monitor_Handler, 1);
+  xTaskCreatePinnedToCore(Lungs_monitor, "Lungs monitor", 2048, NULL, 1, &Lungs_monitor_Handler, 0);
   xTaskCreatePinnedToCore(max30100_value, "MAX30100", 2048, NULL, 1, &max30100_value_Handler, 1);
   xTaskCreatePinnedToCore(Sensor_values, "Sensor values", 2048, NULL, 1, &Sensor_values_Handler, 1);
   xTaskCreatePinnedToCore(TFT_display, "TFT display", 2048, NULL, 1, &TFT_display_Handler, 1);
@@ -119,7 +119,7 @@ void Sensor_values(void *pvParameters) {
     mq_v = mq_v + analogRead(mqsensor);
     j++;
     if(j == 10){
-      t = (temp/10) - 8;
+      t = (temp/10);
       mq = mq_v/10 ;
       mq = map(mq, 0, 4095, 0, 100);
       mq_v = 0;
@@ -167,8 +167,11 @@ void max30100_value(void *pvParameters) {
       if(ht >= 100){
         heart = 99;
       }
-      else{
+      else if(ht >= 49){
         heart = ht;
+      }
+      else {
+        heart = 0;
       }
       //animation
       if (heart > 0) {
