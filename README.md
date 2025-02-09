@@ -2,7 +2,7 @@
 This project integrates an ESP32 microcontroller with multiple sensors, including a MEMS INMP441 microphone, to detect and predict asthma in humans. The system captures respiratory sounds, air quality, temperature, humidity, heart rate, and oxygen saturation, which are critical indicators of asthma. The MEMS microphone, placed on the chest, monitors respiratory operations to detect abnormalities in breathing patterns. Real-time data collection and processing are achieved using an RTOS-based approach, ensuring efficient multitasking. The collected data is used to train a machine learning (ML) model on the Edge Impulse platform, enabling the system to predict asthma conditions. The results are displayed on a 1.3-inch OLED screen, and alerts are provided through a buzzer in critical situations.
 ![image](https://github.com/Saifali4604/Asthma_Detection_on_ESP32_using_ML/blob/main/Gallery/IMG_20250116_013132.jpg)
 
-<video src="WhatsApp%20Video%202025-02-09%20at%2021.45.56_0b626ee7.mp4" controls width="600"></video>
+[Watch the Demo Video on LinkedIn](https://www.linkedin.com/posts/mohammad-saifali-shaikh-87922b2b4_rtos-edgeml-embeddedsystems-activity-7294403019264196608-YoVi?utm_source=social_share_video_v2&utm_medium=android_app&utm_campaign=whatsapp)
 
 
 ## Components Used:
