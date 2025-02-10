@@ -6,7 +6,7 @@ This project integrates an ESP32 microcontroller with multiple sensors, includin
 
 
 ## Components Used:
-1. ### ESP32 (ESP-WROOM-32):
+1. ### ESP32 (ESP-WROOM-32): (V2.0.17)
    The central processing unit that collects sensor data, processes it, and forwards it to Edge Impulse for training the ML model.
 2. ### MEMS Microphone (INMP441):
    Monitors respiratory sounds when placed on the chest, enabling the system to detect abnormal breathing patterns indicative of asthma.
