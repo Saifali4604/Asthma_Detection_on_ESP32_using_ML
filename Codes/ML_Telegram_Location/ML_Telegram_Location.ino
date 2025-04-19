@@ -1,3 +1,18 @@
+//ML lib
+#include <astama_detection_inferencing.h>
+
+// Your WiFi credentials
+const char* ssid = "Saif";
+const char* password = "a1234567";
+
+// Your Telegram Bot Token & Chat ID
+#define BOTtoken "8129554371:AAHJaJF4PlQAcAUehriYkgrjcuBypQCjdLA"
+#define CHAT_ID "-1002487084414"  // Your Group Chat ID
+//#define CHAT_ID "7166901221"  // Saif's private Chat ID+
+
+///////////////////////////////////////////////////////////////////////////////////
+
+#include <Wire.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <UniversalTelegramBot.h>
@@ -6,53 +21,26 @@
 #define EEPROM_SIZE 256  // Define EEPROM size
 #define Button 0  // ESP32 Boot button (GPIO 0)
 
-// Your Telegram Bot Token & Chat ID
-#define BOTtoken "8129554371:AAHJaJF4PlQAcAUehriYkgrjcuBypQCjdLA"
-#define CHAT_ID "-1002487084414"  // Your Group Chat ID
-//#define CHAT_ID "7166901221"  // Saif's private Chat ID
-// Your WiFi credentials
-const char* ssid = "Saif";
-const char* password = "a1234567";
+static bool debug_nn = false;
+
+int spo2 = 0;
+int hR = 0;
+int rasp = 0;
+int w, B;
+int previousB = -1;
+float Normal = 0, PostA = 0, PreA = 0;
+unsigned long lastCheck = 0;
+const int checkInterval = 1000;
+String keyboard = "[[\"Health Status\"]]";
 
 WiFiClientSecure client;
 UniversalTelegramBot bot(BOTtoken, client);
 
-unsigned long lastCheck = 0;
-const int checkInterval = 1000;
-
-int w;
-
-String keyboard = "[[\"Health Status\"]]";
-String t, h, spo2, hR, body_temp, mq, rms, respLevel;
-
 void Uart_SerialTask(void *pvParameters);
 TaskHandle_t Uart_SerialTask_Handler;
 
-void wifisetup()
-{
-    if(WiFi.status() != WL_CONNECTED)
-    {
-      Serial.println("Connecting to WiFi...");
-      digitalWrite(LED_BUILTIN, HIGH); //off
-      WiFi.mode(WIFI_STA);
-      WiFi.begin(ssid, password);
-      while (WiFi.status() != WL_CONNECTED) {
-        delay(200);
-      }
-      w=0;
-    }
-    else
-    {
-      digitalWrite(LED_BUILTIN, LOW); //ON
-      if(w==0)
-      {
-        Serial.println("\n✅ WiFi Connected!");
-        client.setInsecure();
-        bot.sendMessageWithReplyKeyboard(CHAT_ID, "✅ ESP32 is now connected! Click the button below:", "", keyboard, true);
-        w=1;
-      }
-    }
-}
+void ML_Task(void *pvParameters);
+TaskHandle_t ML_Task_Handler;
 
 void setup() {
   Serial.begin(115200);
@@ -68,37 +56,10 @@ void setup() {
   wifisetup();
   
   xTaskCreatePinnedToCore(Uart_SerialTask, "Uart_SerialTask", 2048, NULL, 1, &Uart_SerialTask_Handler, 1); //Serial works in core 1
+  xTaskCreatePinnedToCore(ML_Task, "ML Task", 4096, NULL, 1, &ML_Task_Handler, 1);
 }
 
-//////////////////////////////////////////////////// Uart Data /////////////////////////////////////////////
-
-void Uart_SerialTask(void *pvParameters) {
-  Serial1.begin(115200, SERIAL_8N1, 6, 43); //new rx, default tx Xiao ESP32S3
-  //Serial1.begin(115200, SERIAL_8N1, 16, 17); //new rx, default tx ESP32
-  for(;;){
-    if (Serial1.available()) {
-      String currentData = Serial1.readStringUntil('\n');  // Read until newline character
-      int index1 = currentData.indexOf('\t');
-      int index2 = currentData.indexOf('\t', index1 + 1);
-      int index3 = currentData.indexOf('\t', index2 + 1);
-      int index4 = currentData.indexOf('\t', index3 + 1);
-      int index5 = currentData.indexOf('\t', index4 + 1);
-      int index6 = currentData.indexOf('\t', index5 + 1);
-      // Extract each value based on the tabs
-      t = currentData.substring(0, index1);
-      h = currentData.substring(index1 + 1, index2);
-      spo2 = currentData.substring(index2 + 1, index3);
-      hR = currentData.substring(index3 + 1, index4);
-      body_temp = currentData.substring(index4 + 1, index5);
-      mq = currentData.substring(index5 + 1, index6);
-      respLevel = currentData.substring(index6 + 1);
-      //respLevel = currentData.substring(index7 + 1);
-    }
-    
-  }
-}
-
-//////////////////////////////////////////////////// Telegram /////////////////////////////////////////////
+//////////////////////////////////////////////////// Telegram Functions /////////////////////////////////////////////
 
 // Storing the location inside EEPROM
 void saveLocationToEEPROM(String location) {
@@ -137,36 +98,6 @@ String readLocationFromEEPROM() {
   return location;
 }
 
-// Time to Time checking of new Msg in Telegram
-void Telegram(){
-  if (millis() - lastCheck > checkInterval) { // Check for new messages every second
-    lastCheck = millis();
-    int numNewMessages = bot.getUpdates(bot.last_message_received + 1);
-    while (numNewMessages) {
-      handleNewMessages(numNewMessages);
-      numNewMessages = bot.getUpdates(bot.last_message_received + 1);
-    }
-  }
-}
-
-// Performs the tasks once Astama Detected
-void Astama_Detected(){
-  digitalWrite(LED_BUILTIN, HIGH); //OFF
-  String storedLocation = readLocationFromEEPROM();
-  Serial.println("📤 Sending test message to Telegram...");
-  bot.sendMessage(CHAT_ID, "⚠️ Astama detected! Hurry up and take action!");
-  String sensorData = "🌡 Temperature: " + String(t) + "°C\n" +
-                        "💧 Humidity: " + String(h) + "%\n" +
-                        "🌬 Air Quality: " + String(mq) + "\n" +
-                        "❤️ Heart Rate: " + String(hR) + " bpm\n" +
-                        "🩸 SpO2: " + String(spo2) + "%\n" +
-                        "🤒 Body Temperature: " + String(body_temp) + "°F\n" +
-                        "💨 Breathing intensity: " + String(respLevel) + "\n" +
-                        "📍 Location: " + storedLocation + "";
-  bot.sendMessage(CHAT_ID, sensorData, "");
-  t = ""; h = ""; spo2 = ""; hR = ""; body_temp = ""; mq = ""; rms = ""; respLevel = "";
-}
-
 // Telegram Task
 void handleNewMessages(int numNewMessages) {// Function to handle received messages
   for (int i = 0; i < numNewMessages; i++) {
@@ -182,26 +113,185 @@ void handleNewMessages(int numNewMessages) {// Function to handle received messa
       bot.sendMessage(chat_id, "✅ Location saved successfully!");
     } 
     else if (text == "Health Status" || text == "/status@Astama_v2_bot" || text == "/status") {
-      String sensorData = "🌡 Temperature: " + String(t) + "°C\n" +
-                          "💧 Humidity: " + String(h) + "%\n" +
-                          "🌬 Air Quality: " + String(mq) + "\n" +
-                          "❤️ Heart Rate: " + String(hR) + " bpm\n" +
-                          "🩸 SpO2: " + String(spo2) + "%\n" +
-                          "🤒 Body Temperature: " + String(body_temp) + "°F\n" +
-                          "💨 Breathing intensity: " + String(respLevel) + "";
-      bot.sendMessage(chat_id, sensorData, "");
-      t = ""; h = ""; spo2 = ""; hR = ""; body_temp = ""; mq = ""; rms = ""; respLevel = "";
+      String sensorData =  "❤️ Heart Rate: " + String(hR) + " bpm\n" +
+                        "🩸 SpO2: " + String(spo2) + "%\n" +
+                        "💨 Breathing intensity: " + String(rasp) + "";
+  bot.sendMessage(CHAT_ID, sensorData, "");
+  spo2 = 0; 
+  hR = 0; 
+  rasp = 0;
     }
   }
 }
 
-//////////////////////////////////////////////////// Normal Code /////////////////////////////////////////////
+// Time to Time checking of new Msg in Telegram
+void Telegram(){
+  if (millis() - lastCheck > checkInterval) { // Check for new messages every second
+    lastCheck = millis();
+    int numNewMessages = bot.getUpdates(bot.last_message_received + 1);
+    while (numNewMessages) {
+      handleNewMessages(numNewMessages);
+      numNewMessages = bot.getUpdates(bot.last_message_received + 1);
+    }
+  }
+}
 
+//////////////////////////////////////////////////// Normal Functions /////////////////////////////////////////////
+// Performs the tasks once Astama Detected
+void Astama_Detected(){
+  digitalWrite(LED_BUILTIN, HIGH); //OFF
+  String storedLocation = readLocationFromEEPROM();
+  Serial.println("📤 Sending test message to Telegram...");
+  bot.sendMessage(CHAT_ID, "⚠️ Astama detected! Hurry up and take action!");
+  String sensorData =  "❤️ Heart Rate: " + String(hR) + " bpm\n" +
+                        "🩸 SpO2: " + String(spo2) + "%\n" +
+                        "💨 Breathing intensity: " + String(rasp) + "\n" +
+                        "📍 Location: " + storedLocation + "";
+  bot.sendMessage(CHAT_ID, sensorData, "");
+  spo2 = 0; 
+  hR = 0; 
+  rasp = 0;
+}
+
+void Astama_Might(){
+  digitalWrite(LED_BUILTIN, HIGH); //OFF
+  String storedLocation = readLocationFromEEPROM();
+  Serial.println("📤 Sending test message to Telegram...");
+  bot.sendMessage(CHAT_ID, "⚠️ Astama Might Occur! Hurry up and take action!");
+  String sensorData =  "❤️ Heart Rate: " + String(hR) + " bpm\n" +
+                        "🩸 SpO2: " + String(spo2) + "%\n" +
+                        "💨 Breathing intensity: " + String(rasp) + "\n" +
+                        "📍 Location: " + storedLocation + "";
+  bot.sendMessage(CHAT_ID, sensorData, "");
+  spo2 = 0; 
+  hR = 0; 
+  rasp = 0;
+}
+
+void wifisetup()
+{
+    if(WiFi.status() != WL_CONNECTED)
+    {
+      Serial.println("Connecting to WiFi...");
+      digitalWrite(LED_BUILTIN, HIGH); //off
+      WiFi.mode(WIFI_STA);
+      WiFi.begin(ssid, password);
+      while (WiFi.status() != WL_CONNECTED) {
+        delay(200);
+      }
+      w=0;
+    }
+    else
+    {
+      digitalWrite(LED_BUILTIN, LOW); //ON
+      if(w==0)
+      {
+        Serial.println("\n✅ WiFi Connected!");
+        client.setInsecure();
+        bot.sendMessageWithReplyKeyboard(CHAT_ID, "✅ ESP32 is now connected! Click the button below:", "", keyboard, true);
+        w=1;
+      }
+    }
+}
+
+//////////////////////////////////////////////////// Uart Data task /////////////////////////////////////////////
+
+void Uart_SerialTask(void *pvParameters) {
+  Serial1.begin(115200, SERIAL_8N1, 6, 43); //new rx, default tx Xiao ESP32S3
+  //Serial1.begin(115200, SERIAL_8N1, 16, 17); //new rx, default tx ESP32
+  for(;;){
+    if (Serial1.available()) {
+      String currentData = Serial1.readStringUntil('\n');
+      int index1 = currentData.indexOf('\t');
+      int index2 = currentData.indexOf('\t', index1 + 1);
+      spo2 = currentData.substring(0, index1).toInt();
+      hR   = currentData.substring(index1 + 1, index2).toInt();
+      rasp = currentData.substring(index2 + 1).toInt();
+    }
+  }
+}
+
+
+//////////////////////////////////////////////////// ML task ////////////////////////////////////////////////////
+
+  /**
+  * @brief Return the sign of the number
+  * 
+  * @param number 
+  * @return int 1 if positive (or 0) -1 if negative
+  */
+  float ei_get_sign(float number) {
+    return (number >= 0.0) ? 1.0 : -1.0;
+  }
+  /**
+  * @brief      Get data and run inferencing
+  *
+  * @param[in]  debug  Get debug info if true
+  */
+
+
+void ML_Task(void *pvParameters) {
+  ei_printf("Edge Impulse Inferencing Demo (UART input)\n");
+  if (EI_CLASSIFIER_RAW_SAMPLES_PER_FRAME != 3) {
+    ei_printf("ERR: EI_CLASSIFIER_RAW_SAMPLES_PER_FRAME should be 3 (spo2, hR, rasp)\n");
+    return;
+  }
+
+  for(;;){
+    uint8_t buf1[64]="idle";
+    uint8_t buf2[64]="left&right";
+    uint8_t buf3[64]="up&down";
+    ei_printf("\nStarting inferencing in 2 seconds...\n");
+    delay(2000);
+    ei_printf("Sampling...\n");
+
+    float buffer[EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE] = { 0 };
+
+    for (size_t ix = 0; ix < EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE; ix += 3) {
+      uint64_t next_tick = micros() + (EI_CLASSIFIER_INTERVAL_MS * 1000);
+      Serial.printf("SPO2: %d | HR: %d | RASP: %d\n", spo2, hR, rasp);
+      buffer[ix]     = spo2;
+      buffer[ix + 1] = hR;
+      buffer[ix + 2] = rasp;
+      delayMicroseconds(next_tick - micros());
+    }
+    signal_t signal;
+    int err = numpy::signal_from_buffer(buffer, EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE, &signal);
+    if (err != 0) {
+      ei_printf("Failed to create signal from buffer (%d)\n", err);
+      continue;
+    }
+
+    ei_impulse_result_t result = { 0 };
+    err = run_classifier(&signal, &result, debug_nn);
+    if (err != EI_IMPULSE_OK) {
+      ei_printf("ERR: Failed to run classifier (%d)\n", err);
+      continue;
+    }
+
+    ei_printf("Predictions (DSP: %d ms., Classification: %d ms., Anomaly: %d ms.):\n",
+      result.timing.dsp, result.timing.classification, result.timing.anomaly);
+
+    for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
+      ei_printf("    %s: %.5f\n", result.classification[ix].label, result.classification[ix].value);
+      if( ix == 0 ){ Normal = result.classification[ix].value;}
+      else if( ix == 1 ){ PostA = result.classification[ix].value;}
+      else if( ix == 2 ){ PreA = result.classification[ix].value;}
+    }
+    Serial.printf("Normal: %.5f | Pre Asthma: %.5f | Post Asthma: %.5f\n", Normal, PreA, PostA);
+
+    #if EI_CLASSIFIER_HAS_ANOMALY == 1
+      ei_printf("    anomaly score: %.3f\n", result.anomaly);
+    #endif
+  }
+}
+
+//////////////////////////////////////////////////// Normal task ////////////////////////////////////////////////////
 
 void loop() {
   wifisetup();
   Telegram();
   if (digitalRead(Button) == LOW) {
     Astama_Detected();
-  } 
+  }
 }
