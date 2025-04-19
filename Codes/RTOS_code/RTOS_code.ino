@@ -10,10 +10,23 @@
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7789.h> // Hardware-specific library for ST7789
 #include "image.h"
+#include <ArduinoJson.h>
+#include <esp_now.h> 
+#include <WiFi.h> 
+
+
+String recv_jsondata;  
+StaticJsonDocument<256> doc;
+int A = 1;
+int B=0;
+
+int sw = 1;
+
 
 /////////////////////////////////////////////////////////////////////
 //If breathing signals fluctuate too much
 //Increase the high-pass filter factor
+
 const float highPassFactor = 0.99;
 
 // If the system is too sensitive (detecting noise instead of breathing), then increse both
@@ -21,14 +34,16 @@ const float highPassFactor = 0.99;
 int s1 = 1200, s2 = 500;
 
 #define REPORTING_PERIOD_MS  400
-#define d2 2
+#define D2 2
+#define Buzzer 12
 #define mqsensor 34
 #define TFT_CS   19   // Chip select pin
 #define TFT_DC   4  // Data/Command pin
 #define TFT_RST  5  // Reset pin (can be set to -1 if not used)
-#define DHTPIN  27 // 17
+#define DHTPIN  17
 #define FREQUENCY_HZ 50
 #define INTERVAL_MS (1000 / (FREQUENCY_HZ + 1))
+#define Button 0  // ESP32 Boot button (GPIO 0)
 
 static unsigned long last_interval_ms = 0;
 
@@ -95,10 +110,20 @@ void onBeatDetected(){
 
 void setup() {
   Serial.begin(115200);
+  pinMode(D2, OUTPUT);
+  pinMode(Buzzer, OUTPUT);
+  pinMode(Button, INPUT_PULLUP);
+  WiFi.mode(WIFI_STA);
+  if (esp_now_init() !=  ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    //ESP.restart();
+    return;
+  }
+  esp_now_register_recv_cb(OnDataRecv);
   Serial.println(esp_get_free_heap_size());
   
   tftMutex = xSemaphoreCreateMutex();
-  
+
   xTaskCreatePinnedToCore(Edge_impulse, "Edge Impulse", 2048, NULL, 1, &Edge_impulse_Handler, 0);
   xTaskCreatePinnedToCore(Lungs_monitor, "Lungs monitor", 2048, NULL, 1, &Lungs_monitor_Handler, 0);
   xTaskCreatePinnedToCore(max30100_value, "MAX30100", 2048, NULL, 1, &max30100_value_Handler, 1);
@@ -150,28 +175,26 @@ void max30100_value(void *pvParameters) {
   for (;;) {
     pox.update();
     if (millis() - tsLastReport > REPORTING_PERIOD_MS) {
-      int ht = pox.getHeartRate();
+      int ht = pox.getHeartRate() - 10;
       int sp = pox.getSpO2();
       //Sp02
       if(sp >= 100){
         spo2 = 99;
       }
-      else if(heart == 0){
-        spo2 = 0;
-        body_temp = 0;
-      }
-      else{
-        spo2 = sp + 2;
-      }
       //Heart Rate
+      
       if(ht >= 100){
         heart = 99;
       }
       else if(ht >= 49){
         heart = ht;
+        spo2 = sp;
       }
-      else {
+      else{
         heart = 0;
+        spo2 = 0;
+        body_temp = 0;
+        B=0;
       }
       //animation
       if (heart > 0) {
@@ -252,24 +275,36 @@ void Lungs_monitor(void *pvParameters) {
 
 void Edge_impulse(void *pvParameters) {
   for(;;){
+    
     if (millis() > last_interval_ms + INTERVAL_MS) {
       last_interval_ms = millis();
-      Serial.print(t);
-      Serial.print('\t');
-      Serial.print(h);
-      Serial.print('\t');
-      Serial.print(spo2);
-      Serial.print('\t');
-      Serial.print(heart);
-      Serial.print('\t');
-      Serial.print(body_temp);
-      Serial.print('\t');
-      Serial.print(mq);
-      Serial.print('\t');
-      Serial.println(respLevel);
-      // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
-      // Serial.print("Task edge Stack Left: ");
-      // Serial.println(stackLeft);
+      if(sw == 0){
+        Serial.print(spo2);
+        Serial.print('\t');
+        Serial.print(heart);
+        Serial.print('\t');
+        Serial.print(respLevel);
+        Serial.print('\t');
+        Serial.print(t);
+        Serial.print('\t');
+        Serial.print(h);
+        Serial.print('\t');
+        Serial.print(body_temp);
+        Serial.print('\t');
+        Serial.print(mq);
+        Serial.print('\t');
+        Serial.println(B);
+      }
+      else if(sw == 1){
+        Serial.print(spo2);
+        Serial.print('\t');
+        Serial.print(heart);
+        Serial.print('\t');
+        Serial.println(respLevel);
+        // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
+        // Serial.print("Task edge Stack Left: ");
+        // Serial.println(stackLeft);
+      }
     } 
   }
 }
@@ -291,6 +326,34 @@ void drawHeart(int x, int y, int size, uint16_t color) {
   int y2 = y + size;
   tft.fillTriangle(x0, y0, x1, y1, x2, y2, color);
 }
+
+void drawAlertTriangle(int x, int y, int size, uint16_t color) {
+  int halfSize = size / 2;
+
+  // Coordinates for the triangle
+  int x0 = x;
+  int y0 = y - halfSize;
+  int x1 = x - halfSize;
+  int y1 = y + halfSize;
+  int x2 = x + halfSize;
+  int y2 = y + halfSize;
+
+  // Draw filled triangle
+  tft.fillTriangle(x0, y0, x1, y1, x2, y2, color);
+  
+  // Optional: draw triangle outline
+  tft.drawTriangle(x0, y0, x1, y1, x2, y2, ST77XX_BLACK);
+
+  // Draw exclamation mark
+  tft.setTextColor(ST77XX_BLACK);
+  tft.setTextSize(3);
+  tft.setCursor(x - 6, y - 18);
+  tft.print("!");
+
+  // Optional dot at bottom of exclamation
+  tft.fillCircle(x, y + 18, 3, ST77XX_BLACK);
+}
+
 
 // Display the constant content
 void staticdisplay(){
@@ -339,7 +402,7 @@ void staticdisplay(){
   tft.setCursor(10, 174);
   tft.print("MQ: ");
 
-  drawHeart(195, 145, 20, ST77XX_RED);
+  drawHeart(195, 145, 20, ST77XX_ORANGE);
 
 }
 
@@ -426,9 +489,13 @@ void TFT_display(void *pvParameters) {
   if (xSemaphoreTake(tftMutex, portMAX_DELAY) == pdTRUE) {
     tft.init(240, 240, SPI_MODE2);    // Init ST7789 display 240x240 pixels
     tft.setRotation(3);
-    tft.fillRect(0, 0, 240, 240, ST77XX_BLACK);
-    tft.drawBitmap(0,0,RV_logo,250,250,ST77XX_WHITE);
-    delay(2000);
+    tft.fillRect(0, 0, 240, 240, ST77XX_WHITE);
+    tft.drawRGBBitmap(17,0,Clg_logo,206,240);
+    delay(4000);
+    tft.setRotation(3);
+    tft.fillRect(0, 0, 240, 240, ST77XX_WHITE);
+    tft.drawRGBBitmap(17,0,name_img,206,240);
+    delay(3000);
     staticdisplay(); // only once
     xSemaphoreGive(tftMutex);
   }
@@ -441,8 +508,18 @@ void TFT_display(void *pvParameters) {
     if (heart_d > 0) { // Heartbeat animation
       if (millis() > last + 50) {
         if (xSemaphoreTake(tftMutex, portMAX_DELAY) == pdTRUE) {
-          drawHeart(195, 145, (a == 1) ? 20 : 15, ST77XX_WHITE);
-          drawHeart(195, 145, (a == 1) ? 15 : 20, ST77XX_RED);
+          if(B == 0) {
+            drawHeart(195, 145, (a == 1) ? 20 : 15, ST77XX_WHITE);
+            drawHeart(195, 145, (a == 1) ? 15 : 20, ST77XX_ORANGE);
+          }
+          else if(B == 1) {
+            drawHeart(195, 145, (a == 1) ? 20 : 15, ST77XX_RED);
+            drawHeart(195, 145, (a == 1) ? 15 : 20, ST77XX_YELLOW);
+          }
+          else if(B == 2) {
+            drawHeart(195, 145, (a == 1) ? 20 : 15, ST77XX_WHITE);
+            drawHeart(195, 145, (a == 1) ? 15 : 20, ST77XX_RED);
+          }
           a = !a;
           xSemaphoreGive(tftMutex);
         }
@@ -456,4 +533,26 @@ void TFT_display(void *pvParameters) {
   }
 }
 
-void loop(){}
+void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) 
+{
+  char* buff = (char*) incomingData;
+  recv_jsondata = String(buff);
+  DeserializationError error = deserializeJson(doc, recv_jsondata);
+  if (!error) {  // if not error in deserialization
+    digitalWrite(D2, HIGH);
+    A++;
+    if(A==4){
+      A=1;
+    }
+    //esp_restart();
+  } 
+  recv_jsondata = ""; 
+  delay(200);
+  digitalWrite(D2, LOW);
+}
+
+/////////////////////////////////////////////////// Normal ///////////////////////////////////////////////////
+
+
+void loop(){
+}
