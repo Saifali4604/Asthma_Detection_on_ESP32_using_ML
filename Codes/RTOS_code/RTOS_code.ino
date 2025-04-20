@@ -14,26 +14,8 @@
 #include <esp_now.h> 
 #include <WiFi.h> 
 
+/////////////////////////////////////////////////// Pins ////////////////////////////////////////////////////////////
 
-String recv_jsondata;  
-StaticJsonDocument<256> doc;
-int A = 1;
-int B=0;
-
-int sw = 1;
-
-
-/////////////////////////////////////////////////////////////////////
-//If breathing signals fluctuate too much
-//Increase the high-pass filter factor
-
-const float highPassFactor = 0.99;
-
-// If the system is too sensitive (detecting noise instead of breathing), then increse both
-//If the system is not detecting weak breathing properly,Then Decrease both
-int s1 = 1200, s2 = 500;
-
-#define REPORTING_PERIOD_MS  400
 #define D2 2
 #define Buzzer 12
 #define mqsensor 34
@@ -41,28 +23,49 @@ int s1 = 1200, s2 = 500;
 #define TFT_DC   4  // Data/Command pin
 #define TFT_RST  5  // Reset pin (can be set to -1 if not used)
 #define DHTPIN  17
-#define FREQUENCY_HZ 50
-#define INTERVAL_MS (1000 / (FREQUENCY_HZ + 1))
 #define Button 0  // ESP32 Boot button (GPIO 0)
-
-static unsigned long last_interval_ms = 0;
-
-uint32_t tsLastReport = 0;
-int heart,spo2, mq, heart_d, respLevel;
-float t, h, rms, body_temp;
-
-// Mutex for TFT display access
-SemaphoreHandle_t tftMutex ;
-
-int16_t i2sData[1024];
-int32_t sum = 0;
-int R = 1;
-int sensitivity = 90; // Sensitivity variable (0 to 100)
-
+// microphone
 #define I2S_WS 15    // I2S word select pin
 #define I2S_SCK 14   // I2S clock pin
 #define I2S_SD 32    // I2S data pin
 
+/////////////////////////////////////////////////// Global Values ///////////////////////////////////////////////////
+#define REPORTING_PERIOD_MS  400
+#define FREQUENCY_HZ 50
+#define INTERVAL_MS (1000 / (FREQUENCY_HZ + 1))
+int A = 1;
+int B = 0;
+int sw = 1;
+int heart,spo2, mq, heart_d, respLevel;
+float t, h, rms, body_temp;
+static unsigned long last_interval_ms = 0;
+uint32_t tsLastReport = 0;
+String recv_jsondata;  
+StaticJsonDocument<256> doc;
+
+//microphone
+int16_t i2sData[1024];
+int32_t sum = 0;
+int R = 1;
+
+/////////////////////////////////////////////////// Coustom Values ///////////////////////////////////////////////////
+
+// Sensitivity variable (0 to 100)
+int sensitivity = 90; 
+//If breathing signals fluctuate too much
+//Increase the high-pass filter factor
+const float highPassFactor = 0.99;
+// If the system is too sensitive (detecting noise instead of breathing), then increse both
+//If the system is not detecting weak breathing properly,Then Decrease both
+int s1 = 1200, s2 = 500;
+
+/////////////////////////////////////////////////// Configuration ///////////////////////////////////////////////////
+
+Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST); //display
+DHT dht(DHTPIN, DHT11); // Temp sensor
+PulseOximeter pox; // Max30100
+
+// Microphone
 // I2S configuration
 const i2s_config_t i2s_config = {
   .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX), // Receive mode
@@ -86,9 +89,8 @@ const i2s_pin_config_t pin_config = {
   .data_in_num = I2S_SD
 };
 
-Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
-DHT dht(DHTPIN, DHT11);
-PulseOximeter pox;
+// Mutex for TFT display access
+SemaphoreHandle_t tftMutex ;
 
 void Edge_impulse(void *pvParameters);
 TaskHandle_t Edge_impulse_Handler;
@@ -105,8 +107,9 @@ TaskHandle_t max30100_value_Handler;
 void TFT_display(void *pvParameters);
 TaskHandle_t TFT_display_Handler;
 
-void onBeatDetected(){
-}
+void onBeatDetected(){}
+
+/////////////////////////////////////////////////// Setup ///////////////////////////////////////////////////
 
 void setup() {
   Serial.begin(115200);
@@ -164,10 +167,10 @@ void max30100_value(void *pvParameters) {
   Serial.print("Initializing pulse oximeter..");
   // Initialize sensor
   if (!pox.begin()) {
-      Serial.println("FAILED");
-      for(;;);
+    Serial.println("FAILED");
+    for(;;);
   } else {
-      Serial.println("SUCCESS");
+    Serial.println("SUCCESS");
   }
   pox.setIRLedCurrent(MAX30100_LED_CURR_20_8MA);
   pox.setOnBeatDetectedCallback(onBeatDetected);
@@ -251,20 +254,15 @@ void Lungs_monitor(void *pvParameters) {
       // Apply high-pass filter to remove low-frequency noise
       float filteredSample = sample - (highPassFactor * prevFilteredValue);
       prevFilteredValue = filteredSample;
-
       // Sum the absolute values for RMS calculation
       sum += abs(filteredSample);
     }
-
     // Calculate RMS
     rms = sum / sampleCount;
-    
-
     // Map RMS to a respiratory activity level
     int maxRMS = map(sensitivity, 0, 100, s1, s2); // Adjust based on observed breathing amplitude
     respLevel = map(rms, 0, maxRMS, 0, 100);
     respLevel = constrain(respLevel, 0, 100); // Constrain to 0-100%
-    
     displayNoiseIndication(respLevel);
     vTaskDelay(pdMS_TO_TICKS(100));
   }
@@ -311,7 +309,7 @@ void Edge_impulse(void *pvParameters) {
 
 /////////////////////////////////////////////////// Display ///////////////////////////////////////////////////
 
-// Heart Animation
+// Heart Animation Function
 void drawHeart(int x, int y, int size, uint16_t color) {
   // Draw two circles for the top of the heart
   tft.fillCircle(x - size / 2, y - size / 3, size / 2, color);  // Left circle
@@ -355,7 +353,8 @@ void drawAlertTriangle(int x, int y, int size, uint16_t color) {
 }
 
 
-// Display the constant content
+// Display the constant Strings Function
+
 void staticdisplay(){
   tft.fillScreen(ST77XX_BLACK);
 
@@ -406,7 +405,8 @@ void staticdisplay(){
 
 }
 
-// Display the content 
+// Display the updated Values
+
 void updateDisplay() {
   static float prevTemp = -1;
   static float prevHumidity = -1;
@@ -490,15 +490,16 @@ void TFT_display(void *pvParameters) {
     tft.init(240, 240, SPI_MODE2);    // Init ST7789 display 240x240 pixels
     tft.setRotation(3);
     tft.fillRect(0, 0, 240, 240, ST77XX_WHITE);
-    tft.drawRGBBitmap(17,0,Clg_logo,206,240);
+    tft.drawRGBBitmap(17,0,Clg_logo,206,240); // clg logo
     delay(4000);
     tft.setRotation(3);
     tft.fillRect(0, 0, 240, 240, ST77XX_WHITE);
-    tft.drawRGBBitmap(17,0,name_img,206,240);
+    tft.drawRGBBitmap(17,0,name_img,206,240); // Team members
     delay(3000);
-    staticdisplay(); // only once
+    staticdisplay(); // only once display the constant strings
     xSemaphoreGive(tftMutex);
   }
+  
   int a = 0;
   unsigned long last = 0;
 
@@ -533,6 +534,8 @@ void TFT_display(void *pvParameters) {
   }
 }
 
+/////////////////////////////////////////////////// ESPnow ///////////////////////////////////////////////////
+
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) 
 {
   char* buff = (char*) incomingData;
@@ -550,6 +553,7 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len)
   delay(200);
   digitalWrite(D2, LOW);
 }
+
 
 /////////////////////////////////////////////////// Normal ///////////////////////////////////////////////////
 
